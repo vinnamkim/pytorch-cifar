@@ -69,6 +69,11 @@ if args.model == 'lasso':
 elif args.model == 'norm':
     from my_models.norm_resnet import resnet18
     net = resnet18()
+elif args.model == 'ws':
+    from my_models.ws_resnet import resnet18
+    net = resnet18()
+
+dir_name = args.model + '_18_' + str(args.batch_size)
 
 net = net.to(device)
 if device == 'cuda':
@@ -78,8 +83,8 @@ if device == 'cuda':
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
-    assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/ckpt.pth')
+    assert os.path.isdir(dir_name), 'Error: no checkpoint directory found!'
+    checkpoint = torch.load(os.path.join(dir_name, 'ckpt.pth'))
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
@@ -142,9 +147,9 @@ def test(epoch):
             'acc': acc,
             'epoch': epoch,
         }
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt.pth')
+        if not os.path.isdir(dir_name):
+            os.mkdir(dir_name)
+        torch.save(state, os.path.join(dir_name, 'ckpt.pth'))
         best_acc = acc
 
     return test_loss / (batch_idx + 1), 100. * correct / total
@@ -158,4 +163,4 @@ for epoch in range(start_epoch, start_epoch + args.epoch):
     stats['train'].append(train(epoch))
     stats['test'].append(test(epoch))
     scheduler.step()
-    torch.save(stats, os.path.join('checkpoint', 'stats.pth'))
+    torch.save(stats, os.path.join(dir_name, 'stats.pth'))
