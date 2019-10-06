@@ -3,18 +3,20 @@ import torch.nn as nn
 
 from torchvision.models.resnet import _resnet
 
-def _get_delta(input):
-    delta = torch.ones_like(input)
-    delta[input < 0] = -1.
+def _get_delta(input, scalar):
+    delta = torch.full_like(input, scalar)
+    delta[input < 0] = -scalar
 
     return delta
 
 class LassoConv2d(nn.Conv2d):
     def __init__(self, *args, **kwargs):
         super(LassoConv2d, self).__init__(*args, **kwargs)
+        num = self.in_channels * self.kernel_size[0] * self.kernel_size[1]
+        self.denom = 1 / float(num)
 
     def forward(self, input):
-        delta = _get_delta(self.weight)
+        delta = _get_delta(self.weight, self.denom)
 
         with torch.no_grad():
             if self.training:
@@ -246,4 +248,5 @@ def wide_resnet101_2(pretrained=False, progress=True, **kwargs):
 
 if __name__ == "__main__":
     model = resnet18()
+    model(torch.randn([1, 3, 64, 64]))
     pass
