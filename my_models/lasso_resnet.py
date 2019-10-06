@@ -3,6 +3,8 @@ import torch.nn as nn
 
 from torchvision.models.resnet import _resnet
 
+PROBS = 0.5
+
 def _get_delta(input, scalar):
     delta = torch.full_like(input, scalar)
     delta[input < 0] = -scalar
@@ -21,10 +23,12 @@ class LassoConv2d(nn.Conv2d):
         with torch.no_grad():
             if self.training:
                 probs = 2. * (self.weight.sigmoid() - 0.5).abs()
+                probs.clamp_(max=PROBS)
                 samples = torch.rand_like(self.weight)
                 delta[samples > probs] = 0
             else:
                 probs = 2. * (self.weight.sigmoid() - 0.5).abs()
+                probs.clamp_(max=PROBS)
                 delta *= probs
 
         return self.conv2d_forward(input, self.weight + delta)
