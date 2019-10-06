@@ -48,19 +48,8 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 
 # Model
 print('==> Building model..')
-# net = VGG('VGG19')
-# net = ResNet18()
-# net = PreActResNet18()
-# net = GoogLeNet()
-# net = DenseNet121()
-# net = ResNeXt29_2x64d()
-# net = MobileNet()
-# net = MobileNetV2()
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
-net = EfficientNetB0()
+from torchvision.models import resnet18
+net = resnet18()
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
@@ -77,6 +66,7 @@ if args.resume:
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 60, 80], gamma=0.3)
 
 # Training
 def train(epoch):
@@ -100,6 +90,8 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+    
+    return train_loss / (batch_idx + 1), 100. * correct / total
 
 def test(epoch):
     global best_acc
@@ -135,7 +127,15 @@ def test(epoch):
         torch.save(state, './checkpoint/ckpt.pth')
         best_acc = acc
 
+    return test_loss / (batch_idx + 1), 100. * correct / total
+
+stats = {
+    'train' : [],
+    'test' : []
+}
 
 for epoch in range(start_epoch, start_epoch+200):
-    train(epoch)
-    test(epoch)
+    stats['train'].append(train(epoch))
+    stats['test'].append(test(epoch))
+    scheduler.step()
+    torch.save(stats, os.path.join('checkpoint', 'stats.pth'))
