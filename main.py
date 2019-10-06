@@ -17,12 +17,19 @@ from utils import progress_bar
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--epoch', default=100, type=int, help='length of epochs to train')
+parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
+parser.add_argument('--random_seed', default=None, type=int, help='random seed')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
+if args.random_seed is not None:
+    print('Set manual seed :', args.random_seed)
+    torch.manual_seed(args.random_seed)
+    torch.cuda.manual_seed_all(args.random_seed)
 
 # Data
 print('==> Preparing data..')
@@ -38,8 +45,9 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
+print('batch_size : ', args.batch_size)
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 
 testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
@@ -48,7 +56,8 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 
 # Model
 print('==> Building model..')
-from torchvision.models import resnet18
+#from torchvision.models import resnet18
+from my_models.lasso_resnet import resnet18
 net = resnet18()
 net = net.to(device)
 if device == 'cuda':
@@ -134,7 +143,7 @@ stats = {
     'test' : []
 }
 
-for epoch in range(start_epoch, start_epoch+200):
+for epoch in range(start_epoch, start_epoch + args.epoch):
     stats['train'].append(train(epoch))
     stats['test'].append(test(epoch))
     scheduler.step()
