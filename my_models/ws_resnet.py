@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.functional as F
 
 class WsConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
