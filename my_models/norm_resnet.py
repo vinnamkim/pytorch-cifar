@@ -1,45 +1,15 @@
 import torch
 import torch.nn as nn
 
-PROBS = 0.5
-
-def _get_delta(input, scalar):
-    delta = torch.full_like(input, scalar)
-    delta[input < 0] = -scalar
-
-    return delta
-
-class LassoConv2d(nn.Conv2d):
-    def __init__(self, *args, **kwargs):
-        super(LassoConv2d, self).__init__(*args, **kwargs)
-        num = self.in_channels * self.kernel_size[0] * self.kernel_size[1]
-        self.denom = 1 / float(num)
-
-    def forward(self, input):
-        delta = _get_delta(self.weight, self.denom)
-
-        with torch.no_grad():
-            if self.training:
-                probs = 2. * (self.weight.sigmoid() - 0.5).abs()
-                probs.clamp_(max=PROBS)
-                samples = torch.rand_like(self.weight)
-                delta[samples > probs] = 0
-            else:
-                probs = 2. * (self.weight.sigmoid() - 0.5).abs()
-                probs.clamp_(max=PROBS)
-                delta *= probs
-
-        return self.conv2d_forward(input, self.weight + delta)
-
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
-    return LassoConv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=dilation, groups=groups, bias=False, dilation=dilation)
 
 
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
-    return LassoConv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
+    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
 class BasicBlock(nn.Module):

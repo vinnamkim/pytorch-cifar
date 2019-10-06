@@ -21,6 +21,7 @@ parser.add_argument('--epoch', default=100, type=int, help='length of epochs to 
 parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
 parser.add_argument('--random_seed', default=None, type=int, help='random seed')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--model', default='norm', type=str, help='model to train')
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -45,20 +46,30 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
+num_workers = 2
+
+if os.name == 'nt':
+    num_workers = 0
+
 print('batch_size : ', args.batch_size)
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=num_workers)
 
 testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
+testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=num_workers)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 # Model
 print('==> Building model..')
 #from torchvision.models import resnet18
-from my_models.lasso_resnet import resnet18
-net = resnet18()
+if args.model == 'lasso':
+    from my_models.lasso_resnet import resnet18
+    net = resnet18()
+elif args.model == 'norm':
+    from my_models.norm_resnet import resnet18
+    net = resnet18()
+
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
