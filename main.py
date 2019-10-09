@@ -21,6 +21,7 @@ parser.add_argument('--batch_size', default=128, type=int, help='training batch 
 parser.add_argument('--random_seed', default=None, type=int, help='random seed')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--model', default='norm', type=str, help='model to train')
+parser.add_argument('--cosine-penalty', default=-1., type=float, help='cosine_penalty')
 parser.add_argument('--spectral-penalty', default=-1., type=float, help='spectral_penalty')
 args = parser.parse_args()
 
@@ -100,6 +101,12 @@ if args.spectral_penalty > 0.:
 else:
     spectral_penalty = None
 
+if args.cosine_penalty > 0.:
+    from my_models.cosine_penalty import CosinePenalty
+    cosine_penalty = CosinePenalty(weight=args.cosine_penalty)
+else:
+    cosine_penalty = None
+
 # Training
 def train(epoch):
     print('\nEpoch: %d' % epoch)
@@ -112,12 +119,18 @@ def train(epoch):
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
-        if spectral_penalty:
+        origin_loss = loss.item()
+
+        if spectral_penalty is not None:
             loss += spectral_penalty(net)
+        
+        if cosine_penalty is not None:
+            loss += cosine_penalty(net)
+
         loss.backward()
         optimizer.step()
 
-        train_loss += loss.item()
+        train_loss += origin_loss
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()

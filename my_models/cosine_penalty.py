@@ -26,9 +26,9 @@ class CosinePenalty():
 if __name__ == "__main__":
     from norm_resnet import resnet18
     net = resnet18()
-    # for p in net.parameters():
-    #     print(p[0])
-    #     break
+    for p in net.parameters():
+        print(p[0])
+        break
     cosine_penalty = CosinePenalty(weight=1.0)
     for i in range(10):
         penalty = cosine_penalty(net)
