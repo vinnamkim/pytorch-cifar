@@ -21,7 +21,7 @@ parser.add_argument('--batch_size', default=128, type=int, help='training batch 
 parser.add_argument('--random_seed', default=None, type=int, help='random seed')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--model', default='norm', type=str, help='model to train')
-parser.add_argument('--spectral-penalty', dest='spectral_penalty', action='store_true', help='spectral_penalty')
+parser.add_argument('--spectral-penalty', default=-1., type=float, help='spectral_penalty')
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -94,9 +94,11 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 60, 80], gamma=0.3)
 
-if args.spectral_penalty:
+if args.spectral_penalty > 0.:
     from my_models.spectral_penalty import SpectralPenalty
-    spectral_penalty = SpectralPenalty(weight=0.01)
+    spectral_penalty = SpectralPenalty(weight=args.spectral_penalty)
+else:
+    spectral_penalty = None
 
 # Training
 def train(epoch):
@@ -110,7 +112,7 @@ def train(epoch):
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
-        if args.spectral_penalty:
+        if spectral_penalty:
             loss += spectral_penalty(net)
         loss.backward()
         optimizer.step()
