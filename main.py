@@ -73,6 +73,15 @@ elif args.model == 'norm':
 elif args.model == 'ws':
     from my_models.ws_resnet import resnet18
     net = resnet18()
+elif args.model == 'zerocenter':
+    from my_models.zerocenter_resnet import resnet18
+    net = resnet18()
+elif args.model == 'doublenorm':
+    from my_models.doublenorm_resnet import resnet18
+    net = resnet18()
+elif args.model == 'avgpoolnorm':
+    from my_models.avgpoolnorm_resnet import resnet18
+    net = resnet18()
 
 dir_name = args.model + '_18_' + str(args.batch_size)
 
@@ -91,9 +100,8 @@ if args.resume:
     start_epoch = checkpoint['epoch']
 
 criterion = nn.CrossEntropyLoss()
-
-optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 60, 80], gamma=0.3)
+optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
 if args.spectral_penalty > 0.:
     from my_models.spectral_penalty import SpectralPenalty
