@@ -82,8 +82,14 @@ elif args.model == 'doublenorm':
 elif args.model == 'avgpoolnorm':
     from my_models.avgpoolnorm_resnet import resnet18
     net = resnet18()
+elif args.model == 'ws_doublenorm':
+    from my_models.ws_doublenorm_resnet import resnet18
+    net = resnet18()
 
 dir_name = args.model + '_18_' + str(args.batch_size)
+
+if args.random_seed is not None:
+    dir_name += '_' + str(args.random_seed)
 
 net = net.to(device)
 if device == 'cuda':
@@ -176,6 +182,10 @@ def test(epoch):
             'net': net.state_dict(),
             'acc': acc,
             'epoch': epoch,
+            'model': args.model,
+            'net_model': net.__str__(),
+            'lr': args.lr,
+            'batch_size': args.batch_size
         }
         if not os.path.isdir(dir_name):
             os.mkdir(dir_name)

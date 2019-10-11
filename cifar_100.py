@@ -85,6 +85,9 @@ elif args.model == 'avgpoolnorm':
 
 dir_name = args.model + '_50_' + str(args.batch_size)
 
+if args.random_seed is not None:
+    dir_name += '_' + str(args.random_seed)
+
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
