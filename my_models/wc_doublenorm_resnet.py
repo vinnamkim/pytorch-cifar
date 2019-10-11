@@ -1,49 +1,16 @@
 import torch
 import torch.nn as nn
-
-class WsConv2d(nn.Conv2d):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True):
-        super(WsConv2d, self).__init__(in_channels, out_channels, kernel_size, stride,
-                 padding, dilation, groups, bias)
-
-    def forward(self, x):
-        # return super(Conv2d, self).forward(x)
-        weight = self.weight
-        weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
-                                  keepdim=True).mean(dim=3, keepdim=True)
-        weight = weight - weight_mean
-        std = weight.view(weight.size(0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
-        weight = weight / std.expand_as(weight)
-        return self.conv2d_forward(x, weight)
-
-class WcConv2d(nn.Conv2d):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True):
-        super(WcConv2d, self).__init__(in_channels, out_channels, kernel_size, stride,
-                 padding, dilation, groups, bias)
-
-    def forward(self, x):
-        # return super(Conv2d, self).forward(x)
-        weight = self.weight
-        weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
-                                  keepdim=True).mean(dim=3, keepdim=True)
-        weight = weight - weight_mean
-        return self.conv2d_forward(x, weight)
-        
-def BatchNorm2d(num_features):
-    return nn.GroupNorm(num_channels=num_features, num_groups=32)
-
+from ws_resnet import WcConv2d
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
-    return WsConv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+    return WcConv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=dilation, groups=groups, bias=False, dilation=dilation)
 
 
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
-    return WsConv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
+    return WcConv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
 class BasicBlock(nn.Module):
@@ -66,6 +33,13 @@ class BasicBlock(nn.Module):
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = norm_layer(planes)
         self.downsample = downsample
+
+        self.bn1_prime = norm_layer(planes)
+        if downsample is None:
+            self.bn2_prime = norm_layer(planes)
+        else:
+            self.bn2_prime = norm_layer(planes * self.expansion)
+
         self.stride = stride
 
     def forward(self, x):
@@ -74,6 +48,7 @@ class BasicBlock(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
+        out = self.bn1_prime(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
@@ -83,6 +58,7 @@ class BasicBlock(nn.Module):
 
         out += identity
         out = self.relu(out)
+        out = self.bn2_prime(out)
 
         return out
 
@@ -106,16 +82,22 @@ class Bottleneck(nn.Module):
         self.downsample = downsample
         self.stride = stride
 
+        self.bn1_prime = norm_layer(width)
+        self.bn2_prime = norm_layer(width)
+        self.bn3_prime = norm_layer(planes * self.expansion)
+        
     def forward(self, x):
         identity = x
 
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
+        out = self.bn1_prime(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
+        out = self.bn2_prime(out)
 
         out = self.conv3(out)
         out = self.bn3(out)
@@ -125,6 +107,7 @@ class Bottleneck(nn.Module):
 
         out += identity
         out = self.relu(out)
+        out = self.bn3_prime(out)
 
         return out
 
@@ -132,7 +115,7 @@ class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=10, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
-                 norm_layer=BatchNorm2d):
+                 norm_layer=None):
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -149,7 +132,7 @@ class ResNet(nn.Module):
                              "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = WsConv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1,
+        self.conv1 = WcConv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1,
                                bias=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
@@ -162,10 +145,11 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
                                        dilate=replace_stride_with_dilation[2])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.bn_avgpool = norm_layer(512 * block.expansion)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
-            if isinstance(m, WsConv2d):
+            if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
@@ -355,6 +339,7 @@ def wide_resnet101_2(pretrained=False, progress=True, **kwargs):
 
 
 if __name__ == "__main__":
-    model = resnet18()
-    model(torch.randn([1, 3, 32, 32]))
+    model = resnet50()
+    out = model(torch.randn([1, 3, 32, 32]))
+    print(out)
     pass

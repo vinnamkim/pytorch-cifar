@@ -82,6 +82,12 @@ elif args.model == 'doublenorm':
 elif args.model == 'avgpoolnorm':
     from my_models.avgpoolnorm_resnet import resnet50
     net = resnet50(num_classes=100)
+elif args.model == 'ws_doublenorm':
+    from my_models.ws_doublenorm_resnet import resnet50
+    net = resnet50(num_classes=100)
+elif args.model == 'wc_doublenorm':
+    from my_models.wc_doublenorm_resnet import resnet50
+    net = resnet50(num_classes=100)
 
 dir_name = args.model + '_50_' + str(args.batch_size)
 
