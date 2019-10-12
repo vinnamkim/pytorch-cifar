@@ -1,8 +1,10 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
 for i in {10..14}
 do
    echo "Run $i model : $1"
-   python main.py --model=$1 --random_seed=$i
+   python $SCRIPT_DIR/main.py --model=$1 --random_seed=$i
 done
 
