@@ -16,7 +16,7 @@ from utils import progress_bar
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR100 Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-parser.add_argument('--epoch', default=100, type=int, help='length of epochs to train')
+parser.add_argument('--epoch', default=90, type=int, help='length of epochs to train')
 parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
 parser.add_argument('--random_seed', default=None, type=int, help='random seed')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
