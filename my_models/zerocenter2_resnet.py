@@ -13,14 +13,8 @@ def conv1x1(in_planes, out_planes, stride=1):
 
 def zerocenter(x):
     """x : [B, C, H, W]"""
+    """x_mean : [B, 1, 1, 1]"""
     return x - x.flatten(1).mean(1, keepdim=True).unsqueeze(-1).unsqueeze(-1)
-
-if __name__ == "__main__":
-    x = torch.randn([10, 100, 20, 20])
-    print(x)
-    x = zerocenter(x)
-    print(x)
-    pass
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -48,22 +42,22 @@ class BasicBlock(nn.Module):
         identity = x
 
         out = self.conv1(x)
-        out = self.bn1(out)
+        out = zerocenter(out)
         out = self.relu(out)
         
-        out = zerocenter(out)
-
+        out = self.bn1(out)
+        
         out = self.conv2(out)
-        out = self.bn2(out)
+        out = zerocenter(out)
 
         if self.downsample is not None:
             identity = self.downsample(x)
 
         out += identity
         out = self.relu(out)
-
-        out = zerocenter(out)
-
+        
+        out = self.bn2(out)
+        
         return out
 
 class Bottleneck(nn.Module):
@@ -90,28 +84,25 @@ class Bottleneck(nn.Module):
         identity = x
 
         out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
         out = zerocenter(out)
+        out = self.relu(out)
+        out = self.bn1(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.relu(out)
-
         out = zerocenter(out)
+        out = self.relu(out)
+        out = self.bn2(out)
 
         out = self.conv3(out)
-        out = self.bn3(out)
+        out = zerocenter(out)
 
         if self.downsample is not None:
             identity = self.downsample(x)
 
         out += identity
         out = self.relu(out)
-
-        out = zerocenter(out)
-
+        out = self.bn3(out)
+        
         return out
 
 class ResNet(nn.Module):
@@ -193,10 +184,10 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.bn1(x)
+        x = zerocenter(x)
         x = self.relu(x)
         #x = self.maxpool(x)
-        x = zerocenter(x)
+        x = self.bn1(x)
 
         x = self.layer1(x)
         x = self.layer2(x)
@@ -343,5 +334,17 @@ def wide_resnet101_2(pretrained=False, progress=True, **kwargs):
 
 if __name__ == "__main__":
     model = resnet18()
-    model(torch.randn([1, 3, 32, 32]))
+    out = model(torch.randn([1, 3, 32, 32]))
+    pass
+
+if __name__ == "__main__":
+    model = resnet50()
+    out = model(torch.randn([1, 3, 32, 32]))
+    pass
+
+if __name__ == "__main__":
+    x = torch.randn([10, 100, 20, 20])
+    print(x)
+    x = zerocenter(x)
+    print(x)
     pass

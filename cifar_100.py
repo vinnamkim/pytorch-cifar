@@ -76,6 +76,9 @@ elif args.model == 'ws':
 elif args.model == 'zerocenter':
     from my_models.zerocenter_resnet import resnet50
     net = resnet50(num_classes=100)
+elif args.model == 'zerocenter2':
+    from my_models.zerocenter2_resnet import resnet50
+    net = resnet50(num_classes=100)
 elif args.model == 'doublenorm':
     from my_models.doublenorm_resnet import resnet50
     net = resnet50(num_classes=100)
