@@ -9,22 +9,9 @@ import torchvision
 import torchvision.transforms as transforms
 
 import os
-import argparse
+from arguments import args
 
 from utils import progress_bar
-
-
-parser = argparse.ArgumentParser(description='PyTorch CIFAR100 Training')
-parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-parser.add_argument('--epoch', default=90, type=int, help='length of epochs to train')
-parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
-parser.add_argument('--random_seed', default=None, type=int, help='random seed')
-parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-parser.add_argument('--model', default='norm', type=str, help='model to train')
-parser.add_argument('--cosine-penalty', default=-1., type=float, help='cosine_penalty')
-parser.add_argument('--spectral-penalty', default=-1., type=float, help='spectral_penalty')
-parser.add_argument('--num-workers', default=2, type=int, help='num_workers')
-args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
@@ -127,6 +114,19 @@ if args.cosine_penalty > 0.:
     cosine_penalty = CosinePenalty(weight=args.cosine_penalty)
 else:
     cosine_penalty = None
+
+def get_singular_values():
+    for batch_idx, (inputs, targets) in enumerate(trainloader):
+        inputs, targets = inputs.to(device), targets.to(device)
+        outputs = net(inputs)
+        loss = criterion(outputs, targets)
+
+        for n, p in net.named_parameters():
+            if 'conv' in n and 'weight' in n:
+                _, S, _ = torch.svd(p.grad.flatten(1), compute_uv=False)
+                t = S[0].log() - S[-1].log()
+                print(n, S[0] / S[-1], t.exp())
+        break
 
 # Training
 def train(epoch):
