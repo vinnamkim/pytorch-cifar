@@ -23,6 +23,7 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--model', default='norm', type=str, help='model to train')
 parser.add_argument('--cosine-penalty', default=-1., type=float, help='cosine_penalty')
 parser.add_argument('--spectral-penalty', default=-1., type=float, help='spectral_penalty')
+parser.add_argument('--num-workers', default=2, type=int, help='num_workers')
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -47,7 +48,7 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
-num_workers = 2
+num_workers = args.num_workers
 
 if os.name == 'nt':
     num_workers = 0
