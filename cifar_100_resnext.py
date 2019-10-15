@@ -63,6 +63,9 @@ elif args.model == 'ws':
 elif args.model == 'zerocenter':
     from my_models.zerocenter_resnet import resnext50_32x4d
     net = resnext50_32x4d(num_classes=100)
+elif args.model == 'zerocenter2':
+    from my_models.zerocenter2_resnet import resnext50_32x4d
+    net = resnext50_32x4d(num_classes=100)
 elif args.model == 'doublenorm':
     from my_models.doublenorm_resnet import resnext50_32x4d
     net = resnext50_32x4d(num_classes=100)
