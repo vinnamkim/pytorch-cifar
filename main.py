@@ -23,31 +23,14 @@ if args.random_seed is not None:
 
 # Data
 print('==> Preparing data..')
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
-
-transform_test = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
-
 num_workers = args.num_workers
 
 if os.name == 'nt':
     num_workers = 0
 
-print('batch_size : ', args.batch_size)
-trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=num_workers)
-
-testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform_test)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=num_workers)
-
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+from datasets import get_datasets
+trainset, trainloader, testset, testloader = get_datasets(
+    args.dataset, args.batch_size, num_workers)
 
 # Model
 print('==> Building model..')
@@ -114,19 +97,6 @@ if args.cosine_penalty > 0.:
     cosine_penalty = CosinePenalty(weight=args.cosine_penalty)
 else:
     cosine_penalty = None
-
-def get_singular_values():
-    for batch_idx, (inputs, targets) in enumerate(trainloader):
-        inputs, targets = inputs.to(device), targets.to(device)
-        outputs = net(inputs)
-        loss = criterion(outputs, targets)
-
-        for n, p in net.named_parameters():
-            if 'conv' in n and 'weight' in n:
-                _, S, _ = torch.svd(p.grad.flatten(1), compute_uv=False)
-                t = S[0].log() - S[-1].log()
-                print(n, S[0] / S[-1], t.exp())
-        break
 
 # Training
 def train(epoch):
