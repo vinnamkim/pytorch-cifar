@@ -63,6 +63,7 @@ elif args.model == 'wc_doublenorm':
     from my_models.wc_doublenorm_resnet import resnet50
     net = resnet50(num_classes=num_classes)
 
+print('num_classes : ', num_classes)
 dir_name = args.model + '_50_' + str(args.batch_size)
 
 if args.random_seed is not None:
