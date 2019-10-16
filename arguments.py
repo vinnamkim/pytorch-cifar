@@ -12,4 +12,5 @@ parser.add_argument('--spectral-penalty', default=-1., type=float, help='spectra
 parser.add_argument('--num-workers', default=2, type=int, help='num_workers')
 parser.add_argument('--save', '-s', action='store_true', help='save every 10 epoch')
 parser.add_argument('--dataset', default='CIFAR100', type=str, help='dataset name')
+parser.add_argument('--step-size', default=30, type=int, help='lr decay step size')
 args = parser.parse_args()
