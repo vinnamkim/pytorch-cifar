@@ -6,22 +6,6 @@ from torchvision import transforms
 from torchvision import datasets
 import numpy as np
 
-def fast_collate(batch):
-    imgs = [img[0] for img in batch]
-    targets = torch.tensor([target[1] for target in batch], dtype=torch.int64)
-    w = imgs[0].size[0]
-    h = imgs[0].size[1]
-    tensor = torch.zeros( (len(imgs), 3, h, w), dtype=torch.uint8 )
-    for i, img in enumerate(imgs):
-        nump_array = np.asarray(img, dtype=np.uint8)
-        if(nump_array.ndim < 3):
-            nump_array = np.expand_dims(nump_array, axis=-1)
-        nump_array = np.rollaxis(nump_array, 2)
-
-        tensor[i] += torch.from_numpy(nump_array)
-        
-    return tensor, targets
-
 parser = argparse.ArgumentParser(description='PyTorch Imagenet Training')
 parser.add_argument('data', metavar='DIR',
                     help='path to dataset')
@@ -49,6 +33,7 @@ parser.add_argument('--world-size', default=-1, type=int,
                     help='number of nodes for distributed training')
 parser.add_argument('--rank', default=-1, type=int,
                     help='node rank for distributed training')
+parser.add_argument('--resume', default=None, type=str, help='resume')
 args = parser.parse_args()
 
 # distributed
@@ -61,7 +46,8 @@ args.world_size = torch.distributed.get_world_size()
 # set seed
 from catalyst.dl import SupervisedRunner
 from catalyst.utils import set_global_seed, prepare_cudnn
-from catalyst.dl.callbacks.checkpoint import IterationCheckpointCallback
+from catalyst.dl.callbacks.checkpoint import IterationCheckpointCallback, CheckpointCallback
+from catalyst.dl.callbacks.metrics import AccuracyCallback
 
 set_global_seed(args.seed)
 #prepare_cudnn(deterministic=True)
@@ -98,14 +84,13 @@ val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
 
 train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-        num_workers=args.workers, pin_memory=True, sampler=train_sampler, collate_fn=fast_collate)
+        num_workers=args.workers, pin_memory=True, sampler=train_sampler)
 
 val_loader = torch.utils.data.DataLoader(
     val_dataset,
     batch_size=args.batch_size, shuffle=False,
     num_workers=args.workers, pin_memory=True,
-    sampler=val_sampler,
-    collate_fn=fast_collate)
+    sampler=val_sampler)
 
 loaders = {"train": train_loader, "valid": val_loader}
 
@@ -142,6 +127,21 @@ if args.mixed_precision == True:
     model = model.to('cuda')
     model, optimizer = amp.initialize(model, optimizer, opt_level=opt_level)
 
+from collections import OrderedDict
+callbacks = OrderedDict()
+
+# resume
+if args.resume is not None:
+    resume = args.resume
+    callbacks['ckpt'] = CheckpointCallback(save_n_best=100, resume=resume)
+    num_epochs = max([0, num_epochs - torch.load(resume)['epoch']])
+
+else:
+    resume = None
+    callbacks['ckpt'] = CheckpointCallback(save_n_best=100)
+
+callbacks['acc'] = AccuracyCallback(accuracy_args=[1, 5])
+
 # model training
 runner.train(
     model=model,
@@ -150,10 +150,7 @@ runner.train(
     scheduler=scheduler,
     loaders=loaders,
     logdir=logdir,
-    callbacks=[
-        IterationCheckpointCallback(
-            save_n_last=100, num_iters=5000)
-    ],
+    callbacks=callbacks,
     num_epochs=num_epochs,
     verbose=True
 )
