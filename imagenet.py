@@ -27,6 +27,7 @@ parser.add_argument('--epochs', default=90, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
+parser.add_argument('-m', '--mixed-precision', action='store_false', help='Use mixed-precision')
 args = parser.parse_args()
 
 # set seed
@@ -97,6 +98,13 @@ scheduler = torch.optim.lr_scheduler.MultiStepLR(
 
 # model runner
 runner = SupervisedRunner()
+
+# mixed precision
+if args.mixed_precision == True:
+    from apex import amp
+    print('Use mixed precision')
+    opt_level = 'O1'
+    model, optimizer = amp.initialize(model, optimizer, opt_level=opt_level)
 
 # model training
 runner.train(
