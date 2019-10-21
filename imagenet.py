@@ -47,6 +47,11 @@ parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
 parser.add_argument('-m', '--mixed-precision', action='store_true', help='Use mixed-precision')
 args = parser.parse_args()
 
+# distributed
+torch.distributed.init_process_group(backend='nccl',
+                                        init_method='env://')
+args.world_size = torch.distributed.get_world_size()
+
 # set seed
 from catalyst.dl import SupervisedRunner
 from catalyst.utils import set_global_seed, prepare_cudnn
