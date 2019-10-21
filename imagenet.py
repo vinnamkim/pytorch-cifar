@@ -104,6 +104,7 @@ if args.mixed_precision == True:
     from apex import amp
     print('Use mixed precision')
     opt_level = 'O1'
+    model = model.to('cuda')
     model, optimizer = amp.initialize(model, optimizer, opt_level=opt_level)
 
 # model training
