@@ -45,11 +45,17 @@ parser.add_argument('--epochs', default=90, type=int, metavar='N',
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('-m', '--mixed-precision', action='store_true', help='Use mixed-precision')
+parser.add_argument('--world-size', default=-1, type=int,
+                    help='number of nodes for distributed training')
+parser.add_argument('--rank', default=-1, type=int,
+                    help='node rank for distributed training')
 args = parser.parse_args()
 
 # distributed
 torch.distributed.init_process_group(backend='nccl',
-                                     init_method='tcp://127.0.0.1:9876')
+                                     init_method='tcp://127.0.0.1:9876',
+                                     world_size=args.world_size,
+                                     rank=args.rank)
 args.world_size = torch.distributed.get_world_size()
 
 # set seed
