@@ -49,7 +49,7 @@ args = parser.parse_args()
 
 # distributed
 torch.distributed.init_process_group(backend='nccl',
-                                        init_method='env://')
+                                     init_method='tcp://127.0.0.1:9876')
 args.world_size = torch.distributed.get_world_size()
 
 # set seed
@@ -58,7 +58,7 @@ from catalyst.utils import set_global_seed, prepare_cudnn
 from catalyst.dl.callbacks.checkpoint import IterationCheckpointCallback
 
 set_global_seed(args.seed)
-prepare_cudnn(deterministic=True)
+#prepare_cudnn(deterministic=True)
 
 # experiment setup
 logdir = "./logdir_" + args.model + "_" + str(args.seed)
