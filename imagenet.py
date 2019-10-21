@@ -32,6 +32,7 @@ args = parser.parse_args()
 # set seed
 from catalyst.dl import SupervisedRunner
 from catalyst.utils import set_global_seed, prepare_cudnn
+from catalyst.dl.callbacks.checkpoint import IterationCheckpointCallback
 
 set_global_seed(args.seed)
 prepare_cudnn(deterministic=True)
@@ -73,6 +74,7 @@ val_loader = torch.utils.data.DataLoader(
 loaders = {"train": train_loader, "valid": val_loader}
 
 # model, criterion, optimizer
+print ('Model : ', args.model)
 if args.model == 'resnet50_norm':
     from torchvision.models import resnet50
     model = resnet50()
@@ -104,6 +106,10 @@ runner.train(
     scheduler=scheduler,
     loaders=loaders,
     logdir=logdir,
+    callbacks=[
+        IterationCheckpointCallback(
+            save_n_last=100, num_iters=5000)
+    ],
     num_epochs=num_epochs,
     verbose=True
 )
