@@ -56,6 +56,9 @@ elif args.model == 'zerocenter2':
 elif args.model == 'doublenorm':
     from my_models.doublenorm_resnet import resnet50
     net = resnet50(num_classes=num_classes)
+elif args.model == 'doublenorm2':
+    from my_models.doublenorm2_resnet import resnet50
+    net = resnet50(num_classes=num_classes)
 elif args.model == 'avgpoolnorm':
     from my_models.avgpoolnorm_resnet import resnet50
     net = resnet50(num_classes=num_classes)
