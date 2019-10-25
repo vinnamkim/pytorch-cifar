@@ -1,7 +1,12 @@
 import torch
 import torch.nn as nn
+import numpy as np
+#from scipy.stats import norm
+from torch.distributions import Normal
 
+STD_NORM_DIST = Normal(loc=0., scale=1.)
 EPS = 1e-5
+CONSTANT = np.sqrt(2. * np.pi)
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
@@ -13,11 +18,29 @@ def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
-def after_norm(x):
+def after_norm(x, bn : nn.BatchNorm2d = None, training=True):
     """x : [B, C, H, W]"""
-    """x_mean : [B, 1, 1, 1]"""
-    mean = x.flatten(1).mean(1, keepdim=True).unsqueeze_(-1).unsqueeze_(-1)
-    std = x.flatten(1).std(1, keepdim=True).unsqueeze_(-1).unsqueeze_(-1)
+    """x_mean : [1, C, 1, 1]"""
+
+    def _make_shape(tensor):
+        return tensor.unsqueeze_(0).unsqueeze_(-1).unsqueeze_(-1)
+
+    if training is True:
+        mean = _make_shape(x.transpose(0, 1).flatten(1).mean(1))
+        std = _make_shape(x.transpose(0, 1).flatten(1).mean(1))
+    else:
+        with torch.no_grad():
+            sigma = bn.weight
+            mu = bn.bias
+            mu_sigma = mu / sigma
+            prob = 1. - STD_NORM_DIST.cdf(-mu_sigma)
+            exp_term = CONSTANT * torch.exp(-0.5 * mu_sigma * mu_sigma)
+            mean = sigma / exp_term + mu * prob
+            std = mu * sigma * exp_term \
+                + (mu * mu + sigma * sigma) * prob - mean * mean
+            std = std.clamp_min_(0.)
+            mean, std = _make_shape(mean), _make_shape(std)
+
     return (x - mean) / (std + EPS)
 
 class BasicBlock(nn.Module):
@@ -48,9 +71,8 @@ class BasicBlock(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        out = after_norm(out)
-        
-        
+        out = after_norm(out, self.bn1, self.training)
+
         out = self.conv2(out)
         out = self.bn2(out)
 
@@ -89,12 +111,12 @@ class Bottleneck(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        out = after_norm(out)
+        out = after_norm(out, self.bn1, self.training)
 
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
-        out = after_norm(out)
+        out = after_norm(out, self.bn2, self.training)
 
         out = self.conv3(out)
         out = self.bn3(out)
@@ -190,7 +212,7 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         #x = self.maxpool(x)
-        x = after_norm(x)
+        x = after_norm(x, self.bn1, self.training)
 
         x = self.layer1(x)
         x = self.layer2(x)
@@ -338,10 +360,14 @@ def wide_resnet101_2(pretrained=False, progress=True, **kwargs):
 if __name__ == "__main__":
     model = resnet18()
     out = model(torch.randn([2, 3, 32, 32]))
+    model.eval()
+    out = model(torch.randn([2, 3, 32, 32]))
     pass
 
 if __name__ == "__main__":
     model = resnet50()
+    out = model(torch.randn([2, 3, 32, 32]))
+    model.eval()
     out = model(torch.randn([2, 3, 32, 32]))
     pass
 
