@@ -41,6 +41,9 @@ if args.model == 'lasso':
 elif args.model == 'norm':
     from my_models.norm_resnet import resnet50
     net = resnet50(num_classes=num_classes)
+elif args.model == 'norm2':
+    from my_models.norm2_resnet import resnet50
+    net = resnet50(num_classes=num_classes)
 elif args.model == 'ws':
     from my_models.ws_resnet import resnet50
     net = resnet50(num_classes=num_classes)

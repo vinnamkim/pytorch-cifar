@@ -41,6 +41,9 @@ if args.model == 'lasso':
 elif args.model == 'norm':
     from my_models.norm_resnet import resnet18
     net = resnet18(num_classes=num_classes)
+elif args.model == 'norm2':
+    from my_models.norm2_resnet import resnet18
+    net = resnet18(num_classes=num_classes)
 elif args.model == 'ws':
     from my_models.ws_resnet import resnet18
     net = resnet18(num_classes=num_classes)
@@ -62,7 +65,7 @@ elif args.model == 'ws_doublenorm':
 elif args.model == 'wc_doublenorm':
     from my_models.wc_doublenorm_resnet import resnet18
     net = resnet18(num_classes=num_classes)
-net.__str__()
+
 print('num_classes : ', num_classes)
 dir_name = args.model + '_18_' + str(args.batch_size)
 
