@@ -37,8 +37,8 @@ def after_norm(x, bn : nn.BatchNorm2d = None, training=True):
             exp_term = CONSTANT * torch.exp(-0.5 * mu_sigma * mu_sigma)
             mean = sigma / exp_term + mu * prob
             std = mu * sigma * exp_term \
-                + (mu * mu + sigma * sigma) * prob
-            std = std.clamp_min_(0.)
+                + (mu * mu + sigma * sigma) * prob - mean * mean
+            std = torch.sqrt(std.clamp_min_(0.))
             mean, std = _make_shape(mean), _make_shape(std)
 
     return (x - mean) / (std + EPS)
