@@ -6,7 +6,7 @@ from torch.distributions import Normal
 
 STD_NORM_DIST = Normal(loc=0., scale=1.)
 EPS = 1e-5
-CONSTANT = np.sqrt(2. * np.pi)
+CONSTANT = 1 / np.sqrt(2. * np.pi)
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
@@ -35,7 +35,7 @@ def after_norm(x, bn : nn.BatchNorm2d = None, training=True):
             mu_sigma = mu / sigma
             prob = 1. - STD_NORM_DIST.cdf(-mu_sigma)
             exp_term = CONSTANT * torch.exp(-0.5 * mu_sigma * mu_sigma)
-            mean = sigma / exp_term + mu * prob
+            mean = sigma * exp_term + mu * prob
             std = mu * sigma * exp_term \
                 + (mu * mu + sigma * sigma) * prob - mean * mean
             std = torch.sqrt(std.clamp_min_(0.))
