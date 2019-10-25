@@ -183,8 +183,10 @@ for epoch in range(start_epoch, start_epoch + args.epoch):
     stats['test'].append(test(epoch))
     scheduler.step()
     torch.save(stats, os.path.join(dir_name, 'stats.pth'))
-#     torch.save(net.state_dict(), 
-#         os.path.join(dir_name, 'ckpt_' + str(epoch + 1) + '.pth'))
+
+    if (epoch + 1) % 5 == 0:
+        torch.save(net.state_dict(), 
+            os.path.join(dir_name, 'ckpt_' + str(epoch + 1) + '.pth'))
 
 # def get_singular_values():
 #     results = {}
