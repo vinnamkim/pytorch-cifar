@@ -105,6 +105,9 @@ elif args.model == 'resnet50_zerocenter':
 elif args.model == 'resnet50_zerocenter2':
     from imagenet_models.zerocenter2 import resnet50
     model = resnet50()
+elif args.model == 'resnet50_doublenorm2':
+    from imagenet_models.doublenorm2 import resnet50
+    model = resnet50()
 else:
     print('unknown model')
     pass
