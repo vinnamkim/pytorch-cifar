@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 EPS = 1e-5
 
@@ -19,6 +20,11 @@ def after_norm(x):
     mean = x.flatten(1).mean(1, keepdim=True).unsqueeze(-1).unsqueeze(-1)
     std = x.flatten(1).std(1, keepdim=True).unsqueeze(-1).unsqueeze(-1)
     return (x - mean) / (std + EPS)
+
+def zeronorm(x):
+    """x : [B, C, H, W]"""
+    """x_mean : [B, 1, 1, 1]"""
+    return F.layer_norm(x, x.size()[1:], None, None, EPS)
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -48,7 +54,7 @@ class BasicBlock(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        out = after_norm(out)
+        out = zeronorm(out)
         
         
         out = self.conv2(out)
@@ -59,7 +65,7 @@ class BasicBlock(nn.Module):
 
         out += identity
         out = self.relu(out)
-        out = after_norm(out)
+        out = zeronorm(out)
         
         return out
 
@@ -89,12 +95,12 @@ class Bottleneck(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        out = after_norm(out)
+        out = zeronorm(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
-        out = after_norm(out)
+        out = zeronorm(out)
 
         out = self.conv3(out)
         out = self.bn3(out)
@@ -104,7 +110,7 @@ class Bottleneck(nn.Module):
 
         out += identity
         out = self.relu(out)
-        out = after_norm(out)
+        out = zeronorm(out)
         
         return out
 
@@ -190,7 +196,7 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         #x = self.maxpool(x)
-        x = after_norm(x)
+        x = zeronorm(x)
 
         x = self.layer1(x)
         x = self.layer2(x)
@@ -348,6 +354,6 @@ if __name__ == "__main__":
 if __name__ == "__main__":
     x = torch.randn([10, 100, 20, 20])
     print(x)
-    x = after_norm(x)
+    x = zeronorm(x)
     print(x)
     pass
