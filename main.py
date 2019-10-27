@@ -62,6 +62,9 @@ elif args.model == 'doublenorm2':
 elif args.model == 'doublenorm3':
     from my_models.doublenorm3_resnet import resnet50
     net = resnet50(num_classes=num_classes)
+elif args.model == 'doublenorm4':
+    from my_models.doublenorm4_resnet import resnet50
+    net = resnet50(num_classes=num_classes)
 elif args.model == 'avgpoolnorm':
     from my_models.avgpoolnorm_resnet import resnet50
     net = resnet50(num_classes=num_classes)
