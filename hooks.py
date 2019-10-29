@@ -21,9 +21,10 @@ def add_hooks(net):
 
 def init_cond_stats(net):
     stats = {
-        'forwards': {},
-        'backwards': {},
-        'gradients': {}
+        'forwards_cond': {},
+        'backwards_cond': {},
+        'forwards_fbnorm': {},
+        'backwards_fbnorm': {}
     }
     for name, _ in net.named_modules():
         if 'layer' in name and 'conv' in name:
@@ -33,22 +34,29 @@ def init_cond_stats(net):
     return stats
 
 def add_cond_stats(net, stats):
-    for name, module in net.named_modules():
-        if 'layer' in name and 'conv' in name:
-            inputs = module.m_inputs.flatten(2)
-            forward_cond_nums = []
-            backward_cond_nums = []
-            with torch.no_grad():
-                for i in inputs:
-                    _, s, _ = i.svd(compute_uv=False)
-                    s = s.detach().cpu()
-                    forward_cond_nums.append(s[0].log() - s[-1].log())
-
+    with torch.no_grad():
+        for name, module in net.named_modules():
+            if 'layer' in name and 'conv' in name:
+                inputs = module.m_inputs.flatten(2)
                 grads = module.grad_outputs.flatten(2)
-                for g in grads:
-                    _, s, _ = g.svd(compute_uv=False)
-                    s = s.detach().cpu()
-                    backward_cond_nums.append(s[0].log() - s[-1].log())
+                
+                # I = inputs.bmm(inputs.transpose(1, 2))
+                # G = grads.bmm(grads.transpose(1, 2))
+                
+                _, s1, _ = inputs.svd(compute_uv=False)
+                _, s2, _ = grads.svd(compute_uv=False)
 
-            stats['forwards'][name] += forward_cond_nums
-            stats['backwards'][name] += backward_cond_nums
+                forward_cond_nums = (s1[:, 0].log() - s1[:, -1].log()).detach().cpu()
+                backward_cond_nums = (s2[:, 0].log() - s2[:, -1].log()).detach().cpu()
+                forwards_fbnorm = torch.norm(inputs, p='fro', dim=(1,2))
+                backwards_fbnorm = torch.norm(grads, p='fro', dim=(1,2))
+
+                #     for g in grads:
+                #         _, s, _ = g.svd(compute_uv=False)
+                #         s = s.detach().cpu()
+                #         backward_cond_nums.append(s[0].log() - s[-1].log())
+
+                stats['forwards_cond'][name].append(forward_cond_nums)
+                stats['backwards_cond'][name].append(backward_cond_nums)
+                stats['forwards_fbnorm'][name].append(forwards_fbnorm)
+                stats['backwards_fbnorm'][name].append(backwards_fbnorm)

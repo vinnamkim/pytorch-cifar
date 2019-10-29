@@ -110,7 +110,7 @@ from sklearn.model_selection import StratifiedKFold
 fold = StratifiedKFold(n_splits=500, shuffle=True, random_state=args.random_seed)
 splits = fold.split(trainset.data, trainset.targets)
 
-datasets = [s[1] for i, s in enumerate(splits) if i < 10]
+datasets = [s[1] for i, s in enumerate(splits) if i < 5]
     
 for batch in datasets:
     inputs = torch.stack([trainset[i][0] for i in batch])
@@ -122,7 +122,7 @@ add_hooks(net)
 
 results = {}
 
-for epoch in range(1, 6):
+for epoch in range(10, 91, 20):
     checkpoint = torch.load(os.path.join(dir_name, 'ckpt_{0}.pth'.format(epoch)))
     net.load_state_dict(checkpoint)
     print('epoch {0} loaded'.format(epoch))
