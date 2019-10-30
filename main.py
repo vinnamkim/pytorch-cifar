@@ -199,55 +199,15 @@ stats = {
     'test' : []
 }
 
+if args.save is True:
+    print('Save checkpoint every epoch')
+
 for epoch in range(start_epoch, start_epoch + args.epoch):
     stats['train'].append(train(epoch))
     stats['test'].append(test(epoch))
     scheduler.step()
     torch.save(stats, os.path.join(dir_name, 'stats.pth'))
 
-    torch.save(net.state_dict(), 
-        os.path.join(dir_name, 'ckpt_' + str(epoch + 1) + '.pth'))
-
-# def get_singular_values():
-#     results = {}
-    
-#     for n, p in net.named_parameters():
-#         if 'conv' in n and 'weight' in n:
-#             results[n] = []
-    
-#     i = 0
-    
-#     for batch_idx, (inputs, targets) in enumerate(trainloader):
-#         inputs, targets = inputs.to(device), targets.to(device)
-#         outputs = net(inputs)
-#         loss = criterion(outputs, targets)
-#         loss.backward()
-
-#         for n, p in net.named_parameters():
-#             if 'conv' in n and 'weight' in n:
-#                 _, S, _ = torch.svd(p.grad.flatten(1), compute_uv=False)
-#                 t = S[0].log() - S[-1].log()
-                
-#                 results[n].append(t)
-        
-#         for p in net.parameters():
-#             if p.grad is not None:
-#                 p.grad.zero_()
-
-#         print(i)
-#         i += 1
-
-#         if i == 30:
-#             break
-
-#     for key in results:
-#         results[key] = torch.tensor(results[key])
-
-#     return results
-
-# results = get_singular_values()
-
-# torch.save(results, args.model + '.grad')
-
-# for key in results:
-#     print(key, results[key].mean())
+    if args.save is True:
+        torch.save(net.state_dict(), 
+            os.path.join(dir_name, 'ckpt_' + str(epoch + 1) + '.pth'))
