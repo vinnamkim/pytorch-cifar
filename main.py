@@ -200,7 +200,7 @@ stats = {
 }
 
 if args.save is True:
-    print('Save checkpoint every epoch')
+    print('Save checkpoint every 10 epoch')
 
 for epoch in range(start_epoch, start_epoch + args.epoch):
     stats['train'].append(train(epoch))
@@ -208,6 +208,7 @@ for epoch in range(start_epoch, start_epoch + args.epoch):
     scheduler.step()
     torch.save(stats, os.path.join(dir_name, 'stats.pth'))
 
-    if args.save is True:
-        torch.save(net.state_dict(), 
-            os.path.join(dir_name, 'ckpt_' + str(epoch + 1) + '.pth'))
+    if args.save is True:        
+        if (epoch + 1) <= 5 or (epoch + 1) % 10 == 0:
+            torch.save(net.state_dict(), 
+                os.path.join(dir_name, 'ckpt_' + str(epoch + 1) + '.pth'))
