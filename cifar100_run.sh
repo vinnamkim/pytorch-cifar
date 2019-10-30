@@ -5,7 +5,7 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 for i in {10..14}
 do
    save = False
-   if[${i} -eq 10];then
+   if [${i} -eq 10];then
       save = True
    fi
    echo "Run $i model : $1 save : ${save}"
