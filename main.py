@@ -202,7 +202,7 @@ stats = {
 if args.save is True:
     print('Save checkpoint every 10 epoch')
 
-for epoch in range(start_epoch, start_epoch + args.epoch):
+for epoch in range(start_epoch, args.epoch):
     stats['train'].append(train(epoch))
     stats['test'].append(test(epoch))
     scheduler.step()
