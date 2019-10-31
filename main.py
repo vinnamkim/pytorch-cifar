@@ -95,6 +95,11 @@ if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
 
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
+print('lr decay step size : ', args.step_size)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=0.1)
+
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
@@ -103,11 +108,7 @@ if args.resume:
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
-
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
-print('lr decay step size : ', args.step_size)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=0.1)
+    scheduler.load_state_dict(checkpoint['scheduler'])
 
 if args.spectral_penalty > 0.:
     from my_models.spectral_penalty import SpectralPenalty
@@ -185,6 +186,7 @@ def test(epoch):
             'model': args.model,
             'net_model': net.__str__(),
             'lr': args.lr,
+            'scheduler': scheduler.state_dict(),
             'batch_size': args.batch_size,
         }
         if not os.path.isdir(dir_name):
