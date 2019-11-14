@@ -146,7 +146,7 @@ for epoch in epochs:
         net.zero_grad()
         loss = criterion(net(inputs.cuda()), targets.cuda())
         loss.backward()
-        autograd_hacks.compute_grad1(net)
+        autograd_hacks.compute_cond1(net)
 
         #add_cond_stats(net, stats)
         # for name, param in net.named_parameters():
@@ -158,13 +158,12 @@ for epoch in epochs:
 
         autograd_hacks.clear_backprops(net)
         torch.cuda.empty_cache()
-
+        print('step {0} finished'.format(step))
         if step > 100 / args.batch_size:
-            print('step {0} finished'.format(step))
             break
 
     print('epoch {0} done'.format(epoch))
     results[epoch] = stats
 
 torch.save(results, os.path.join(args.prefix, dir_name,
-                                 'individual_grads.stats'))
+                                 'grads.stats'))

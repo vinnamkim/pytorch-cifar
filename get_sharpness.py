@@ -1,7 +1,7 @@
 '''Train CIFAR10 with PyTorch.'''
-import autograd_hacks
-from hooks import add_hooks, init_cond_stats, add_cond_stats, add_grad_stats, init_grad_stats
-from sklearn.model_selection import StratifiedKFold
+import numpy as np
+import matplotlib.pyplot as plt
+from copy import deepcopy
 from datasets import get_datasets
 import torch
 import torch.nn as nn
@@ -37,7 +37,7 @@ trainset, trainloader, testset, testloader, num_classes = get_datasets(
 
 # Model
 print('==> Building model..')
-#from torchvision.models import resnet50
+# from torchvision.models import resnet18
 if args.model == 'lasso':
     from my_models.lasso_resnet import resnet50
     net = resnet50(num_classes=num_classes)
@@ -93,78 +93,76 @@ dir_name = args.model + '_50_' + str(args.batch_size)
 if args.random_seed is not None:
     dir_name += '_' + str(args.random_seed)
 
-net = net.to(device)
-# if device == 'cuda':
-#net = torch.nn.DataParallel(net)
-#cudnn.benchmark = True
 
-if args.resume:
-    # Load checkpoint.
-    print('==> Resuming from checkpoint..')
-    assert os.path.isdir(dir_name), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load(os.path.join(dir_name, 'ckpt.pth'))
-    net.load_state_dict(checkpoint['net'])
-    best_acc = checkpoint['acc']
-    start_epoch = checkpoint['epoch']
+net = net.to(device)
+if device == 'cuda':
+    net = torch.nn.DataParallel(net)
+    # cudnn.benchmark = True
 
 criterion = nn.CrossEntropyLoss()
 
-fold = StratifiedKFold(n_splits=500, shuffle=True,
-                       random_state=args.random_seed)
-splits = fold.split(trainset.data, trainset.targets)
 
-datasets = [s[1] for i, s in enumerate(splits) if i < 5]
-
-for batch in datasets:
-    inputs = torch.stack([trainset[i][0] for i in batch])
-    outputs = torch.tensor([trainset[i][1] for i in batch])
+def get_path(batch_size):
+    return os.path.join(
+        'cifar100_50_{0}'.format(batch_size),
+        args.model + '_50_{0}_10'.format(batch_size),
+        'ckpt_90.pth')
 
 
-add_hooks(net)
+checkpoint_sb = torch.load(get_path(32))
+checkpoint_lb = torch.load(get_path(64))
 
-results = {}
+
+def test(alpha, loader):
+    checkpoint = {}
+
+    with torch.no_grad():
+        for key in checkpoint_sb:
+            if 'var' in key:
+                x = alpha * checkpoint_lb[key].sqrt() + \
+                    (1 - alpha) * checkpoint_sb[key].sqrt()
+                checkpoint[key] = x * x
+            else:
+                checkpoint[key] = alpha * checkpoint_lb[key] + \
+                    (1 - alpha) * checkpoint_sb[key]
+
+    net.load_state_dict(checkpoint)
+
+    net.eval()
+    test_loss = 0
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for batch_idx, (inputs, targets) in enumerate(loader):
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = net(inputs)
+            loss = criterion(outputs, targets)
+
+            test_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+
+    return test_loss / (batch_idx + 1), 100. * correct / total
 
 
-autograd_hacks.add_hooks(net)
+grid_size = 50
+alpha_range = np.linspace(-1, 2, grid_size)
 
-epochs = [i for i in range(1, 6)] + [i for i in range(10, 91, 10)]
-for epoch in epochs:
-    checkpoint = torch.load(os.path.join(
-        args.prefix, dir_name, 'ckpt_{0}.pth'.format(epoch)))
+stats = {
+    'train': np.ones([grid_size, 2]),
+    'valid': np.ones([grid_size, 2])
+}
 
-    new_checkpoint = {}
-    for key in checkpoint:
-        new_checkpoint[key.replace('module.', '')] = checkpoint[key]
-    net.load_state_dict(new_checkpoint)
-    print('epoch {0} loaded batch_size : {1}'.format(epoch, args.batch_size))
+for i, alpha in enumerate(alpha_range):
+    stats['train'][i] = np.array(test(alpha, trainloader))
+    stats['valid'][i] = np.array(test(alpha, testloader))
 
-    stats = init_grad_stats(net)
+    print('alpha : {0} done'.format(alpha))
 
-    for step, batch in enumerate(trainloader):
-        inputs, targets = batch
 
-        net.zero_grad()
-        loss = criterion(net(inputs.cuda()), targets.cuda())
-        loss.backward()
-        autograd_hacks.compute_grad1(net)
-
-        #add_cond_stats(net, stats)
-        # for name, param in net.named_parameters():
-        #     if 'conv' in name:
-        #         assert(torch.mean(torch.abs(torch.mean(
-        #             param.grad1, dim=0) - param.grad)) < 1e-5)
-
-        add_grad_stats(net, stats)
-
-        autograd_hacks.clear_backprops(net)
-        torch.cuda.empty_cache()
-
-        if step > 100 / args.batch_size:
-            print('step {0} finished'.format(step))
-            break
-
-    print('epoch {0} done'.format(epoch))
-    results[epoch] = stats
-
-torch.save(results, os.path.join(args.prefix, dir_name,
-                                 'individual_grads.stats'))
+plt.plot(stats['train'])
+plt.show()
+plt.plot(stats['valid'])
+plt.show()
+torch.save(stats, args.model + '_sharpness.stats')

@@ -5,6 +5,9 @@ from torch import nn
 def backward_hook(module, grad_input, grad_output):
     #print(module, gradInput, gradOutput)
     #print(copy.deepcopy('{0}'.format(str(i))), module)
+    # for i in grad_input:
+    #     print(i.shape)
+    #print(module, grad_input[0].shape, grad_input[1].shape, grad_output[0].shape)
     module.grad_inputs = grad_input[0].data.clone()
     module.grad_outputs = grad_output[0].data.clone()
 
@@ -39,6 +42,39 @@ def init_cond_stats(net):
 
     return stats
 
+import numpy as np
+from collections import OrderedDict
+
+def init_grad_stats(net):
+    stats = OrderedDict()
+    stats['forwards_cond'] = OrderedDict()
+    stats['backwards_cond'] = OrderedDict()
+    
+    for name, _ in net.named_modules():
+        if 'layer' in name and 'conv' in name:
+            for key in stats:
+                stats[key][name] = []
+
+    return stats
+
+def add_grad_stats(net, stats):
+    with torch.no_grad():
+        for name, module in net.named_modules():
+            if 'layer' in name and 'conv' in name:
+                stats['forwards_cond'][name] += module.forwards_cond
+                stats['backwards_cond'][name] += module.backwards_cond
+
+                # g = module.weight.grad1.flatten(1)
+                # g = (g - g.mean(dim=1, keepdim=True)) / (g.std(dim=1, keepdim=True) + 1e-5)
+                # corr = g.mm(g.T) / g.shape[-1]
+                # lower_corr = []
+                # for i in range(corr.shape[0]):
+                #     lower_corr.append(corr[i][i + 1:])
+                
+                # lower_corr = torch.cat(lower_corr)
+                
+                # results['corr'] = lower_corr
+                
 
 def add_cond_stats(net, stats):
     with torch.no_grad():
