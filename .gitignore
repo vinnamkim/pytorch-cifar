@@ -1,5 +1,5 @@
 .vscode
 **/__pycache__
 data
-analysis
+.ipynb_checkpoints
 norm_18_128
