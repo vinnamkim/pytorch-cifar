@@ -36,53 +36,53 @@ trainset, trainloader, testset, testloader, num_classes = get_datasets(
 print('==> Building model..')
 #from torchvision.models import resnet18
 if args.model == 'lasso':
-    from my_models.lasso_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.lasso_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'norm':
-    from my_models.norm_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.norm_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'norm2':
-    from my_models.norm2_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.norm2_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'ws':
-    from my_models.ws_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.ws_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'zerocenter':
-    from my_models.zerocenter_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.zerocenter_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'zerocenter2':
-    from my_models.zerocenter2_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.zerocenter2_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'doublenorm':
-    from my_models.doublenorm_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.doublenorm_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'doublenorm2':
-    from my_models.doublenorm2_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.doublenorm2_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'doublenorm3':
-    from my_models.doublenorm3_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.doublenorm3_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'doublenorm4':
-    from my_models.doublenorm4_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.doublenorm4_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'doublenorm5':
-    from my_models.doublenorm5_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.doublenorm5_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'doublenorm6':
-    from my_models.doublenorm6_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.doublenorm6_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'doublenorm7':
-    from my_models.doublenorm7_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.doublenorm7_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'avgpoolnorm':
-    from my_models.avgpoolnorm_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.avgpoolnorm_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'ws_doublenorm':
-    from my_models.ws_doublenorm_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.ws_doublenorm_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 elif args.model == 'wc_doublenorm':
-    from my_models.wc_doublenorm_resnet import resnet50
-    net = resnet50(num_classes=num_classes)
+    from my_models.wc_doublenorm_resnet import resnet101
+    net = resnet101(num_classes=num_classes)
 print(net)
 print('num_classes : ', num_classes)
 dir_name = args.model + '_101_' + str(args.batch_size)
